@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <title>Zip Locator</title>
+    <style>
+      .icon-check, .icon-remove{
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <section>
+      <div class="jumbotron container">
+        <h1>Zip Locator</h1>
+        <h2>Enter a zipcode</h2>
+        <form id="zipForm">
+          <div class="input-group input-group-lg">
+            <div class="input-group-prepend">
+              <span class="input-group-text" id="inputGroup-sizing-lg"><i class="fas fa-map-pin"></i></span>
+            </div>
+            <input type="text" class="form-control zip" aria-label="Large" aria-describedby="inputGroup-sizing-sm" placeholder="Enter Zipcode">
+            <div class="input-group-prepend">
+              <span class="input-group-text icon-check" id="inputGroup-sizing-lg"><i style="color: green" class="fas fa-check-square"></i></span>
+            </div>
+            <div class="input-group-prepend">
+              <span class="input-group-text icon-remove" id="inputGroup-sizing-lg"><i style="color: #333" class="fas fa-eraser"></i></span>
+            </div>
+        </div>
+        </form>
+      </div>
+    </section>
+    <br>
+    <div class="container">
+      <output id="output">
+      </output>
+    </div>
+  
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script defer src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+
+    <script type="text/javascript">
+      // listen for submit
+      document.querySelector('#zipForm').addEventListener('submit', generateLocationInfo);
+
+      // listen for delete 
+      document.querySelector('body').addEventListener('click', deleteLocation);
+
+      // listen for reload on bad zip entry
+      document.querySelector('body').addEventListener('click', reloadApp);
+
+
+      function generateLocationInfo(e){
+        e.preventDefault();
+        const zip = document.querySelector('.zip').value;
+
+        // making a rquest with fetch 
+        // using money sign to put a variable inside a template string
+        fetch(`http://api.zippopotam.us/us/${zip}`)
+          .then(response => {
+            if(response.status != 200){
+
+              // call showIcon to show remove
+              showIcon('remove');
+              document.querySelector('#output').innerHTML = 
+                `
+                  <div class="alert alert-danger" role="alert">
+                    <strong>Oh snap!</strong> You entered an invalid zipcode, try again!.
+                    <button type="button" class="reload">Reload to try again</button>
+                  </div>
+                `;
+                throw Error(response.statusText);
+            } else{
+                  // call showIcon to show check
+                  showIcon('check');
+                  return response.json();
+                }
+          })
+          .then(data => {
+            // show location
+            let output = '';
+            data.places.forEach(places => {
+              output += `
+                <div class="alert alert-primary" role="alert">
+                  <p>Location found</p>
+                  <button type="button" class="delete">Delete</button>
+                </div>
+                <div class="alert alert-light" role="alert">
+                  <ul>
+                    <li><strong>City: </strong>${places['place name']}</li>
+                    <li><strong>State: </strong>${places['state']}</li>
+                    <li><strong>Longitude: </strong>${places['longitude']}</li>
+                    <li><strong>Latitude: </strong>${places['latitude']}</li>
+                  </ul>
+                </div>
+              `
+            });
+
+            // insert information into output div
+            document.querySelector('#output').innerHTML = output;
+            console.log(data);
+          })
+          .catch(err => console.log(err));
+
+      } 
+
+      function showIcon(icon){
+        // hide icons
+        document.querySelector('.icon-check').style.display = 'none';
+        document.querySelector('.icon-remove').style.display = 'none';
+
+        // show appropriate icon
+        document.querySelector(`.icon-${icon}`).style.display = 'inline-block';
+        document.querySelector(`.icon-${icon}`).style.display = 'inline-block';       
+
+
+      }   
+
+
+      function deleteLocation(e){
+        // check to see if delete button was clicked
+        if(e.target.className == 'delete'){
+          document.querySelector('#output').remove();
+          document.querySelector('.zip').value = '';
+          document.querySelector('.icon-check').remove();
+          location.reload();
+
+        }
+      }
+
+      function reloadApp(e){
+        if(e.target.className == 'reload'){
+          location.reload();
+        }
+      }
+    </script>
+  </body>
+</html>
+
+
+
